@@ -3,14 +3,62 @@ DIFERENCAS:
 Adicionado o arquivo com todas as palavras possiveis para o termo no arquivo palavras.txt, adicionado o random para selecionar qualquer palavra aleatoria do palavras.txt,
 adicionado controle e numero de tentativas permitidas para cada palavra,
 de resto a logica se manteve, so uma breve formatacao das tentativas e quando acertar faz algo mais bonitinho.
+Normalização de acentos e cedilha integrada na leitura e no sorteio para compatibilidade total com o novo dicionário.
 */
 #include <iostream>
 #include <cstdlib> // Contém as funções rand() e srand()
 #include <ctime>
 #include <string>
 #include <fstream>
-#include <vector> 
+#include <cctype>
+#include <vector>
+#include <windows.h>
 using namespace std;
+
+//tira acentos e cedilha, "normaliza" a palavra e a joga para MAIÚSCULO
+string normalizar_palavra(string palavra) {
+    string resultado = "";
+    for (size_t i = 0; i < palavra.length(); i++) {
+        unsigned char c = palavra[i];
+        
+        if (c < 128) {
+            resultado += toupper(c);
+        } 
+        else if (c == 195 || c == 196 || c == 197) {
+            i++; 
+            unsigned char proximo = palavra[i];
+            
+            // Variantes do A
+            if ((proximo >= 128 && proximo <= 133) || (proximo >= 160 && proximo <= 165)) {
+                resultado += 'A';
+            }
+            // Variantes do E
+            else if ((proximo >= 136 && proximo <= 139) || (proximo >= 168 && proximo <= 171)) {
+                resultado += 'E';
+            }
+            // Variantes do I
+            else if ((proximo >= 140 && proximo <= 143) || (proximo >= 172 && proximo <= 175)) {
+                resultado += 'I';
+            }
+            // Variantes do O
+            else if ((proximo >= 146 && proximo <= 150) || (proximo >= 178 && proximo <= 182)) {
+                resultado += 'O';
+            }
+            // Variantes do U
+            else if ((proximo >= 154 && proximo <= 157) || (proximo >= 186 && proximo <= 189)) {
+                resultado += 'U';
+            }
+            // Cedilha
+            else if (proximo == 135 || proximo == 167) {
+                resultado += 'C';
+            }
+            else {
+                resultado += toupper(c); 
+            }
+        }
+    }
+    return resultado;
+}
 
 int main() {
     ifstream arquivo("palavras.txt");
@@ -18,18 +66,21 @@ int main() {
         cout << "Erro ao abrir o arquivo palavras.txt! Verifique se ele esta na mesma pasta do codigo." << endl;
         return 1;
     }
-
+    
     vector<string> lista_palavras;
     string linha;
     while (getline(arquivo, linha)) {
-        lista_palavras.push_back(linha);
+        // Guarda na lista já normalizada (sem acentos e em maiúsculo)
+        lista_palavras.push_back(normalizar_palavra(linha));
     }
     arquivo.close();
-
+    
     srand(time(NULL));
     int total_de_palavras = lista_palavras.size(); 
     int indice_sorteado = rand() % total_de_palavras; 
-    string certa = lista_palavras[indice_sorteado];
+    
+    // CORREÇÃO AQUI: Garante que mesmo se a lógica anterior mudar, a palavra sorteada passa pelo filtro
+    string certa = normalizar_palavra(lista_palavras[indice_sorteado]); 
 
     string palpite; // CHUTE
     
@@ -47,12 +98,13 @@ int main() {
     cout << "j (o) G o s\n";
     cout << "-> A letra 'G' esta no lugar certo.\n";
     cout << "-> A letra 'O' existe na palavra, mas nao nessa posicao.\n";
-    cout << "-> As letras 'J' and 'S' nao fazem parte da palavra.\n";
+    cout << "-> As letras 'J', 'S' e o segundo 'O' nao fazem parte da palavra.\n";
+    cout << "O jogo aceita caracteres especiais!\n";
     cout << "=========================================================\n\n";
 
     int k = 1; // sentinela controladora de tentativas
     
-    while (k != 7) {
+    while (k <= 6) {
         int usados[] = {0, 0, 0, 0, 0}; // letras usadas
         int certos[] = {0, 0, 0, 0, 0}; // letras certas nas posicoes certas
         int errados[] = {0, 0, 0, 0, 0}; // letras certas nas posicoes erradas
@@ -60,15 +112,13 @@ int main() {
         cout << "\nTentativa " << k << " de 6 - Insira seu chute: ";
         cin >> palpite;
 
+        // Normaliza o palpite antes da validação de tamanho
+        palpite = normalizar_palavra(palpite);
+
         // validacao de tamanho
         if (palpite.length() != 5) {
             cout << "Erro! Seu palpite precisa ter exatamente 5 letras.\n";
             continue;
-        }
-
-        // transforma o palpite em minusculo para facilitar a comparacao com a palavra certa
-        for (int i = 0; i < 5; i++) {
-            palpite[i] = tolower(palpite[i]);
         }
 
         // Validador de palavra existente no dicionário
@@ -82,22 +132,21 @@ int main() {
 
         if (palavra_valida == 0) {
             cout << "Palavra invalida! Essa palavra nao existe no dicionario do jogo.\n";
-            continue; // pula sem contar a tentativa, o jogador pode tentar novamente sem perder uma chance
+            continue; 
         }
 
         // primeiro teste para ver se a letra esta na posicao correta da palavra referencia e do palpite
         for (int i = 0; i < 5; i++) {
             if (palpite[i] == certa[i]) {
-                certos[i] = 1; // marca que a letra esta na posicao correta
+                certos[i] = 1; 
                 usados[i] = 1;
             }
         }
 
-        //primeiro as verdes, prioridade absoluta
-        //o proximo laco eh pra verificar as letras certas na posicao errada
+        // o proximo laco eh pra verificar as letras certas na posicao errada
         for (int i = 0; i < 5; i++) {
             if (certos[i] == 1) {
-                continue; //quando for marcada como correta ela so pula pra proxima iteracao
+                continue; 
             }
             for (int j = 0; j < 5; j++) {
                 if (palpite[i] == certa[j] and usados[j] == 0) {
@@ -111,7 +160,7 @@ int main() {
         int numero_acertos = 0;
         for (int i = 0; i < 5; i++) {
             if (certos[i] == 1) {
-                cout << certa[i] << " ";
+                cout << (char)toupper(palpite[i]) << " ";
                 numero_acertos++;
             }
             else if (errados[i] == 1) {
@@ -127,14 +176,20 @@ int main() {
             cout << endl << "=========================================================" << endl;
             cout << "      PARABENS! Voce acertou a palavra em " << k << " tentativas! " << endl;
             cout << "=========================================================" << endl;
-            break; // interrompe se vencer
+            break;
         }
-        k++; // proxima tentativa
+        k++; 
     }
 
     if (k == 7) {
         cout << endl << "Fim de jogo! Suas tentativas acabaram. A palavra era: " << certa << endl;
     }
 
+    // Contagem regressiva para fechar o terminal
+    for (int i = 0; i < 11; i++) {
+        Sleep(1000);
+        cout << "\rSaindo em " << 10 - i << " segundos... ";
+    }
+    
     return 0;    
 }
