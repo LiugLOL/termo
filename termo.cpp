@@ -1,10 +1,4 @@
-/*
-DIFERENCAS:
-Adicionado o arquivo com todas as palavras possiveis para o termo no arquivo palavras.txt, adicionado o random para selecionar qualquer palavra aleatoria do palavras.txt,
-adicionado controle e numero de tentativas permitidas para cada palavra,
-de resto a logica se manteve, so uma breve formatacao das tentativas e quando acertar faz algo mais bonitinho.
-Normalização de acentos e cedilha integrada na leitura e no sorteio para compatibilidade total com o novo dicionário.
-*/
+/*ativar ansi em WINDOWS para ir em texto colorido*/
 #include <iostream>
 #include <cstdlib> // Contém as funções rand() e srand()
 #include <ctime>
@@ -14,6 +8,11 @@ Normalização de acentos e cedilha integrada na leitura e no sorteio para compa
 #include <vector>
 #include <chrono>
 #include <thread>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 using namespace std;
 
 //tira acentos e cedilha, "normaliza" a palavra e a joga para MAIÚSCULO
@@ -63,12 +62,28 @@ string normalizar_palavra(string palavra) {
     return resultado;
 }
 
+// se for windows, para dar cor no terminal, tem que ativar o modo ANSI
+void ativarANSI() {
+#ifdef _WIN32
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    DWORD dwMode = 0;
+    GetConsoleMode(hOut, &dwMode);
+
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+
+    SetConsoleMode(hOut, dwMode);
+#endif
+}
+
 int main() {
+    ativarANSI();
     ifstream arquivo("palavras.txt");
     if (!arquivo.is_open()) {
-        cout << "Erro ao abrir o arquivo palavras.txt! Verifique se ele esta na mesma pasta do codigo." << endl;
+        cout << "Erro ao abrir o arquivo palavras.txt! Verifique se ele esta na mesma pasta do executavel." << endl;
         return 1;
     }
+    
     
     vector<string> lista_palavras;
     string linha;
@@ -76,14 +91,19 @@ int main() {
         // Guarda na lista já normalizada (sem acentos e em maiúsculo)
         lista_palavras.push_back(normalizar_palavra(linha));
     }
+    
     arquivo.close();
+
+    if (lista_palavras.empty()) {
+        cout << "Erro! O arquivo palavras.txt esta vazio.\n";
+        return 1;
+    }
     
     srand(time(NULL));
-    int total_de_palavras = lista_palavras.size(); 
+    size_t total_de_palavras = lista_palavras.size(); 
     int indice_sorteado = rand() % total_de_palavras; 
     
-    // CORREÇÃO AQUI: Garante que mesmo se a lógica anterior mudar, a palavra sorteada passa pelo filtro
-    string certa = lista_palavras[indice_sorteado]; 
+    string certa = lista_palavras[indice_sorteado]; //palavra certa sorteada
 
     string palpite; // CHUTE
     
@@ -93,16 +113,15 @@ int main() {
     cout << "=========================================================\n";
     cout << "Descubra a palavra certa de 5 letras em ate 6 tentativas.\n\n";
     cout << "COMO JOGAR:\n";
-    cout << "* Uma letra MAIUSCULA significa que ela esta CORRETA e no LUGAR CERTO.\n";
-    cout << "* Uma letra entre PARENTESES (x) significa que ela EXISTE, mas no LUGAR ERRADO.\n";
-    cout << "* Uma letra minuscula comum significa que ela NAO EXISTE na palavra.\n\n";
+    cout << "* Uma letra \033[32mVERDE\033[0m significa que ela esta \033[32mCORRETA\033[0m e no \033[32mLUGAR CERTO\033[0m.\n";
+    cout << "* Uma letra \033[33mAMARELA\033[0m significa que ela \033[32mEXISTE\033[0m, mas no \033[33mLUGAR ERRADO\033[0m.\n";
+    cout << "* Uma letra \033[31mVERMELHA\033[0m significa que ela \033[31mNAO EXISTE\033[0m na palavra.\n\n";
     cout << "EXEMPLO:\n";
     cout << "Se o palpite for J O G O S e o resultado for:\n";
-    cout << "j (o) G o s\n";
+    cout << "\033[31mJ\033[0m \033[33mO\033[0m \033[32mG\033[0m \033[31mO\033[0m \033[31mS\033[0m\n";
     cout << "-> A letra 'G' esta no lugar certo.\n";
     cout << "-> A letra 'O' existe na palavra, mas nao nessa posicao.\n";
     cout << "-> As letras 'J', 'S' e o segundo 'O' nao fazem parte da palavra.\n";
-    cout << "O jogo aceita caracteres especiais!\n";
     cout << "=========================================================\n\n";
 
     int k = 1; // sentinela controladora de tentativas
@@ -167,14 +186,14 @@ int main() {
         int numero_acertos = 0;
         for (int i = 0; i < 5; i++) {
             if (status[i] == 2) {
-                cout << (char)toupper(palpite[i]) << " ";
+                cout << "\033[32m" <<(char)toupper(palpite[i]) << "\033[0m" << " ";
                 numero_acertos++;
             }
             else if (status[i] == 1) {
-                cout << "(" << (char)tolower(palpite[i]) << ")" << " ";
+                cout << "\033[33m" << (char)toupper(palpite[i]) << "\033[0m" << " ";
             }
             else {
-                cout << (char)tolower(palpite[i]) << " ";
+                cout << "\033[31m" << (char)toupper(palpite[i]) << "\033[0m" << " ";
             }
         }
         cout << endl;
@@ -192,12 +211,10 @@ int main() {
         cout << endl << "Fim de jogo! Suas tentativas acabaram. A palavra era: " << certa << endl;
     }
 
-    // Contagem regressiva para fechar o terminal
     
-    for (int i = 10; i > 0; i--) {
-        this_thread::sleep_for(chrono::milliseconds(1000));
-        cout << "\rSaindo em " << i << " segundos... ";
-    }
+    cout << "\nPressione Enter para sair...";
+    cin.ignore(); // limpa o buffer de entrada
+    cin.get(); // pressionar enter fecha o programa
     
     
     return 0;    
