@@ -1,65 +1,235 @@
 # Termo em C++ (Console Game)
 
-Uma versão para terminal do famoso jogo **Termo** (inspirado no *Wordle*), desenvolvida inteiramente em C++. O projeto conta com sorteio de palavras dinâmico através de um arquivo de dicionário externo e tratamento avançado de caracteres da língua portuguesa.
+Uma versão para terminal do famoso jogo **Termo** (inspirado no *Wordle*), desenvolvida inteiramente em C++. O projeto conta com sorteio dinâmico de palavras através de um dicionário externo, tratamento manual de caracteres UTF-8 da língua portuguesa e interface colorida diretamente no terminal.
 
 ---
 
-## 🕹️ Como Jogar
+# 🕹️ Como Jogar
 
-O objetivo é adivinhar uma palavra secreta de 5 letras em no máximo 6 tentativas. A cada palpite, o jogo analisa as letras e devolve um feedback visual:
+O objetivo é descobrir a palavra secreta de 5 letras em no máximo 6 tentativas.
 
-* **Letras MAIÚSCULAS:** Indicam que a letra está correta e na posição exata (Ex: `T`).
-* **Letras entre PARÊNTESES (x):** Indicam que a letra existe na palavra secreta, mas está na posição errada.
-* **Letras minúsculas comuns:** Indicam que a letra não faz parte da palavra secreta.
+A cada palpite, o jogo fornece um feedback visual utilizando cores:
 
-> 💡 **Exemplo:** Se a palavra certa for `JOGOS` e o seu palpite for `TERMO`, as letras que não pertencem à palavra ficarão minúsculas, ajudando a guiar o seu próximo chute.
+* 🟩 **Verde:** letra correta na posição correta.
+* 🟨 **Amarelo:** letra existe na palavra, mas está na posição errada.
+* 🟥 **Vermelho:** letra não existe na palavra secreta.
 
----
+## Exemplo
 
-## ⚙️ Características e Funcionalidades
+Se a palavra correta for:
 
-1. **Dicionário Dinâmico:** O jogo lê um arquivo externo chamado `palavras.txt`, permitindo expandir ou alterar o banco de palavras do jogo facilmente sem mexer no código-fonte.
-2. **Sorteio Aleatório:** Utiliza o relógio do sistema como semente (`srand(time(NULL))`) para garantir que a palavra secreta seja diferente a cada nova partida.
-3. **Validação de Palpites:** O jogo valida se a palavra digitada possui exatamente 5 letras e se ela realmente existe no dicionário. Caso seja inválida, o jogador é alertado e não perde a tentativa.
-4. **Normalizador UTF-8 nativo:** O sistema aceita palavras com acentos ou cedilha (ex: "maçã") e as normaliza automaticamente para o padrão do jogo (ex: "MACA"), evitando bugs de tamanho de string comuns no terminal do Windows.
-5. **Efeito de Saída:** Utiliza manipulação de fluxo com `\r` (carriage return) e as bibliotecas `<chronos>` e `<thread>`para criar uma contagem regressiva visual antes de fechar o prompt de comando.
+```txt
+JOGOS
+```
 
----
+e o jogador digitar:
 
-## 🧠 Processo de Desenvolvimento
+```txt
+TERMO
+```
 
-O projeto foi construído seguindo etapas claras de evolução de software:
-
-* **Fase 1 (Algoritmo Principal):** Desenvolvimento da lógica central do jogo de forma independente. O maior desafio técnico foi criar o sistema de checagem em duas etapas (etapa de prioridade absoluta para letras na posição correta e etapa para letras na posição errada), o que blindou o jogo contra falsos positivos no caso de letras repetidas no palpite.
-* **Fase 2 (Estrutura de Dados):** Transição de uma palavra estática para o carregamento dinâmico de arquivos. Foi implementada a leitura de fluxo de arquivos (`ifstream`) e o armazenamento dinâmico das strings em memória utilizando a estrutura de vetores (`std::vector`).
-* **Fase 3 (Refinamento e Engenharia de Prompt):** Para transformar a lógica robusta em um produto final polido, utilizei ferramentas de Inteligência Artificial como assistentes de codificação. Através de engenharia de prompt, integrei ao meu motor principal funções de tratamento de cache e tabelas de mapeamento de bytes UTF-8 para normalizar acentos e cedilhas diretamente no terminal.
-
-Este processo permitiu focar os esforços na arquitetura lógica do jogo e utilizar tecnologias modernas para acelerar a entrega de recursos complexos de infraestrutura e interface de usuário.
+o terminal exibirá as letras coloridas indicando os acertos e erros.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+# ⚙️ Funcionalidades
 
-* **Linguagem:** C++
-* **Paradigma:** Programação Estruturada / Funcional
-* **Compilador Utilizado:** GCC/G++ através do VS Code
-* **Bibliotecas Padrão:** `<iostream>`, `<vector>`, `<string>`, `<fstream>`, `<cstdlib>`, `<ctime>`, `<chronos>`, `<thread>`.
+## 📚 Dicionário Dinâmico
+
+O jogo utiliza um arquivo externo chamado `palavras.txt`, permitindo adicionar, remover ou alterar palavras sem modificar o código-fonte.
 
 ---
 
-## 🚀 Como Rodar o Projeto
+## 🎲 Sorteio Aleatório
 
-### Opção 1: Executar Direto (Para Jogadores)
-1. Certifique-se de baixar o arquivo `termo.exe` e o arquivo `palavras.txt`.
-2. Coloque os dois arquivos **obrigatoriamente na mesma pasta**.
-3. Dê dois cliques em `termo.exe` para abrir o terminal do Windows e começar a jogar.
+A palavra secreta é escolhida aleatoriamente utilizando:
 
-### Opção 2: Compilar o Código (Para Desenvolvedores)
-1. Certifique-se de ter um compilador C++ instalado (como o MinGW para Windows).
-2. Baixe os arquivos `termo.cpp` e `palavras.txt` e coloque-os na mesma pasta.
-3. Abra o terminal na pasta e compile o código com o comando:
-   ```bash
-   g++ termo.cpp -o termo.exe
-4. Execute o codigo compilado:
-  ```bash
-  ./termo.exe
+```cpp
+srand(time(NULL));
+```
+
+garantindo uma experiência diferente a cada partida.
+
+---
+
+## ✅ Validação de Entrada
+
+O sistema verifica:
+
+* se a palavra possui exatamente 5 letras;
+* se a palavra existe no dicionário;
+* se o arquivo de palavras está vazio;
+* se o arquivo foi carregado corretamente.
+
+Palavras inválidas não consomem tentativas.
+
+---
+
+## 🌎 Compatibilidade Cross-Platform
+
+O projeto funciona em:
+
+* Windows
+* Linux
+* macOS
+
+Foi implementado um sistema condicional com:
+
+```cpp
+#ifdef _WIN32
+```
+
+para ativar suporte ANSI no terminal do Windows, permitindo cores sem quebrar compatibilidade com Unix/Linux.
+
+---
+
+## 🎨 Interface Colorida no Terminal
+
+O jogo utiliza códigos ANSI Escape para renderizar texto colorido diretamente no console:
+
+```cpp
+"\033[32m"
+```
+
+Isso permite criar uma experiência visual semelhante ao jogo original mesmo em ambiente de terminal.
+
+---
+
+## 🔤 Normalização UTF-8
+
+O projeto implementa um sistema manual de normalização de caracteres UTF-8.
+
+Palavras com:
+
+* acentos,
+* til,
+* cedilha,
+
+são convertidas automaticamente para o padrão interno do jogo.
+
+### Exemplos
+
+| Entrada | Normalizado |
+| ------- | ----------- |
+| maçã    | MACA        |
+| órgão   | ORGAO       |
+| útil    | UTIL        |
+
+Isso evita problemas comuns de encoding e tamanho de string no terminal.
+
+---
+
+# 🧠 Processo de Desenvolvimento
+
+O projeto foi desenvolvido em múltiplas etapas:
+
+## Fase 1 — Núcleo do Algoritmo
+
+Implementação da lógica principal do jogo:
+
+* sistema de tentativas;
+* validação de letras;
+* comparação de posições;
+* detecção de letras repetidas.
+
+O maior desafio técnico foi implementar corretamente o sistema de prioridade para letras repetidas, evitando falsos positivos.
+
+---
+
+## Fase 2 — Estrutura de Dados e Arquivos
+
+Integração de:
+
+* leitura de arquivos com `ifstream`;
+* armazenamento dinâmico utilizando `std::vector`;
+* sorteio aleatório de palavras;
+* validação de dicionário.
+
+---
+
+## Fase 3 — Compatibilidade e Refinamento
+
+Nesta etapa foram implementados:
+
+* suporte UTF-8;
+* compatibilidade Windows/Linux/macOS;
+* ativação ANSI no Windows;
+* melhorias visuais no terminal;
+* tratamento de erros;
+* refinamento da experiência do usuário.
+
+Ferramentas de Inteligência Artificial foram utilizadas como apoio de desenvolvimento e debugging durante partes específicas do refinamento técnico do projeto.
+
+---
+
+# 🛠️ Tecnologias Utilizadas
+
+* Linguagem: C++
+* Paradigma: Programação Estruturada
+* Compilador: GCC / G++
+* IDE: Visual Studio Code
+
+## Bibliotecas Utilizadas
+
+```cpp
+<iostream>
+<vector>
+<string>
+<fstream>
+<cstdlib>
+<ctime>
+<cctype>
+<chrono>
+<thread>
+```
+
+---
+
+# 🚀 Como Executar
+
+## Opção 1 — Executar o Binário
+
+### Windows
+
+Baixe:
+
+* `termo.exe`
+* `palavras.txt`
+
+e coloque ambos na mesma pasta.
+
+Depois execute:
+
+```txt
+termo.exe
+```
+
+---
+
+## Opção 2 — Compilar Manualmente
+
+### Linux/macOS
+
+```bash
+g++ termo.cpp -o termo
+./termo
+```
+
+### Windows (MinGW)
+
+```bash
+g++ termo.cpp -o termo.exe
+termo.exe
+```
+
+---
+
+# 📂 Estrutura do Projeto
+
+```txt
+/
+├── termo.cpp
+├── palavras.txt
+└── README.md
+```
+
