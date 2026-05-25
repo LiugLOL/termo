@@ -1,11 +1,3 @@
-/* --- CHECKLIST DE REFATORAÇÃO ---
-  [X] Issue #1: Mover leitura de arquivo para função isolada
-  [X] Issue #2: Criar a classe JogoTermo vazia antes da main
-  [X] Issue #3: Migrar os laços FOR para dentro da classe
-  [X] Issue #4: Criar os métodos getters (checar_vitoria)
-  [X] Issue #5: Limpar a main
-*/
-
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
@@ -162,10 +154,17 @@ class JogoTermo {
     private:
         vector<PalavraSecreta> palavras_certas;
         vector<Palpite> palpites;
-        vector<int> acertos;
         vector<string> dicionario;
-        bool vitoria;
     public:
+        bool getPalavraAcertada(int indice) {
+            if (indice >= 0 && indice < palavras_certas.size()) {
+                return palavras_certas[indice].getAcerto();
+            }
+            return false; // índice inválido
+        }
+        int getQuantidadePalavras() {
+            return palavras_certas.size();
+        }
         bool checarVitoria() {
             for (size_t i = 0; i < palavras_certas.size(); i++) {
                 if (palavras_certas[i].getAcerto() == false) {
@@ -186,18 +185,16 @@ class JogoTermo {
             return false;
         }
         //funcao para armazenar todas as palavras do jogo atual num vetor de tamanho variavel, para o caso de ter mais de uma palavra no jogo
-        void setAcertos(int indice) {
-            if (indice >= 0 && indice < palavras_certas.size()) {
-                acertos.push_back(palavras_certas[indice].getAcerto());
-            }
-        }
         //funcao para retornar quais palavras ja foram acertadas, um status do progresso geral,
         //tipo se acertar so a primeira e a terceira palavra vai ficar como {1, 0, 1, 0} pra quarteto e dps pra imprimir eh mais facil de controlar
-        int getAcertos(int indice) {
-            if (indice >= 0 && indice < acertos.size()) {
-                return acertos[indice];
+        int getNumAcertos() {
+            int acertos_acumulados = 0;
+            for (int i = 0; i < palavras_certas.size(); i++) {
+                if (palavras_certas[i].getAcerto() == true) {
+                        acertos_acumulados++;
+                }
             }
-            return 0;
+            return acertos_acumulados;
         }
         //coloca as palavras secretas do jogo num vetor, para o caso de ter mais de uma palavra no jogo, e depois tem a funcao pra retornar cada palavra do jogo, pra comparar com o chute depois
         void setPalavraJogo(PalavraSecreta valor) {
@@ -213,10 +210,6 @@ class JogoTermo {
         }
         //teste de logica do palpite x palavra secreta, mesma logica do anterior soq agora modularizada pra ser usada em 1 palpite e 4 palavras por exemplo, feita pra se por num laco
         bool checkPalpite(Palpite &chute, int indice) {
-            if (validacaoPalavra(normalizar_palavra(chute.getChute())) == false || chute.getChute().length() != 5) {
-                cout << "Palavra invalida! Tente novamente.\n";
-                return false;
-            }
             chute.setChute(normalizar_palavra(chute.getChute()));
             if (palavras_certas[indice].getAcerto() == true) {
                 // substitui as letras do chute pelas da palavra já acertada
@@ -289,14 +282,7 @@ int main() {
     cout << "Sua opcao(1, 2 ou 3): ";
     cin >> modo_de_jogo;
     bool modo_valido = false;
-    while (!modo_valido) {
-        if (modo_de_jogo > 0 && modo_de_jogo < 4) {
-            modo_valido = true;
-        } else {
-            cout << "Opcao invalida! Por favor, selecione 1, 2 ou 3: ";
-            cin >> modo_de_jogo;
-        }
-    }
+
     if (modo_de_jogo == 3) {
         modo_de_jogo = 4; // para o quarteto, por ser a terceira opcao e 4 palavras, no loop em baixo so assim p funcionar legal
     }
@@ -313,6 +299,13 @@ int main() {
     for (int i = 0; i < modo_de_jogo; i++) {
         PalavraSecreta palavra_secreta;
         palavra_secreta.setPalavraSecreta(decidir_palavra(dicionario)); // decide aleatoriamente cada palavra secreta que exista no dicionario
+        for (int j = 0; j < partida.getQuantidadePalavras(); j++) {
+            // checa se a palavra secreta ja foi escolhida antes, se sim, sorteia outra palavra
+            while (palavra_secreta.getPalavraSecreta() == partida.getPalavraJogo(j).getPalavraSecreta()) {
+                palavra_secreta.setPalavraSecreta(decidir_palavra(dicionario));
+                j = -1; // reinicia o loop para checar novamente todas as palavras ja escolhidas
+            }
+        }
         partida.setPalavraJogo(palavra_secreta); // coloca as palavras secretas no vetor do jogo
     }
 
@@ -323,16 +316,16 @@ int main() {
         string chute_usuario;
         cout << "\nTentativa " << k + 1 << " de " << chances << " - Insira seu chute: ";
         cin >> chute_usuario;
-        chute.setChute(chute_usuario);
+        chute.setChute(normalizar_palavra(chute_usuario)); // normaliza o chute do usuario antes de validar e comparar com as palavras secretas
         bool valido = partida.validacaoPalavra(normalizar_palavra(chute.getChute()));
         if (valido == false) {
             cout << "Palavra invalida(Nao esta no dicionario ou nao tem 5 letras)! Tente novamente.\n";
             continue; // se o chute for invalido, nao conta a tentativa e pede outro chute
         }
         for (int i = 0; i < modo_de_jogo; i++) {
-            PalavraSecreta gabarito = partida.getPalavraJogo(i);
-            partida.checkPalpite(chute, i);
-            chute.imprimirResultado();
+            Palpite chute_atual = chute; // cria um chute atual para cada palavra, pra comparar o mesmo chute com as 4 palavras do quarteto, por exemplo, e cada chute atual vai ter um status diferente dependendo da palavra que ele estiver comparando
+            partida.checkPalpite(chute_atual, i);
+            chute_atual.imprimirResultado();
         }
         cout << endl; // pula a linha dps do loop de palavras
         if (partida.checarVitoria() == true) {
@@ -343,10 +336,15 @@ int main() {
         
     }
     if (k == chances) {
-        cout << endl << "Fim de jogo! Suas tentativas acabaram.\n";
-        cout << "A(s) palavra(s) secreta(s) era(m): ";
+        cout << endl << "Fim de jogo! Suas tentativas acabaram. Voce acertou " << partida.getNumAcertos() << " palavras.\n";
+        cout << "A(s) palavra(s) secreta(s) era(m): " << endl;
         for (int i = 0; i < modo_de_jogo; i++) {
-                cout << partida.getPalavraJogo(i).getPalavraSecreta() << endl;
+                if (partida.getPalavraAcertada(i) == true) {
+                    continue; // se a palavra ja tiver sido acertada, nao precisa mostrar qual era, entao o jogo ja tem que pular pra proxima palavra
+                }
+                 else {
+                    cout << partida.getPalavraJogo(i).getPalavraSecreta() << endl;
+                }
         }
         cout << endl;
     }
